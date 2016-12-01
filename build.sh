@@ -123,5 +123,5 @@ pop
 
 push $module_dir
 make -C "$tmp_path" M="$PWD" modules
-
 rm -rf "$tmp_path"
+pop
