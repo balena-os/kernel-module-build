@@ -89,6 +89,55 @@ function list_versions()
 	done
 }
 
+# Retrieve kernel module headers from the specified remote path and build kernel
+# module against them, generating a new copy of the kernel module with
+# ..._<device>_<version> suffix.
+function get_and_build()
+{
+	local path="$1"
+	local pattern="^images/(.*)/(.*)/"
+	[[ "$path" =~ $pattern ]] || fatal "Invalid path '$path'?!"
+
+	local device="${BASH_REMATCH[1]}"
+	local version="${BASH_REMATCH[2]}"
+	local output_dir="${module_dir}_${device}_${version}"
+
+	filename=$(basename $path)
+	url="$files_url/$path"
+
+	tmp_path=$(mktemp --directory)
+	push $tmp_path
+
+	if ! wget "$url"; then
+		pop
+		rm -rf "$tmp_path"
+
+		err "ERROR: $path: Could not retrieve $url, skipping."
+		return
+	fi
+
+	if ! tar -xf $filename --strip 1; then
+		pop
+		rm -rf "$tmp_path"
+
+		err "ERROR: $path: Unable to extract $tmp_path/$filename, skipping."
+		return
+	fi
+
+	pop
+
+	# Now create a copy of the module directory.
+	rm -rf "$output_dir"
+	mkdir "$output_dir"
+	cp -R "$module_dir"/* "$output_dir"
+
+	push "$output_dir"
+	make -C "$tmp_path" M="$PWD" modules
+	pop
+
+	rm -rf "$tmp_path"
+}
+
 if [[ "$1" = "--list" ]]; then
 	list_versions
 	exit
@@ -102,26 +151,12 @@ module_dir="$3"
 
 [[ -d "$module_dir" ]] || fatal "ERROR: Cannot find module directory $module_dir"
 
-path=$(get_header_paths '' '' "$device" "$version")
-[[ -n "$path" ]] || fatal "Could not find headers for '$device' at version '$version', run $0 --list"
+seen=''
+for path in $(get_header_paths '' '' "$device" "$version"); do
+	echo "Building $path..."
 
-filename=$(basename $path)
-url="$files_url/$path"
+	get_and_build $path
+	seen='y'
+done
 
-tmp_path=$(mktemp --directory)
-push $tmp_path
-
-if ! wget "$url"; then
-	pop
-	rmdir $tmp_path
-	fatal "ERROR: Could not retrieve $url"
-fi
-
-tar -xf $filename --strip 1 || (rm $filename; fatal "ERROR: Unable to extract $tmp_path/$filename")
-rm $filename
-pop
-
-push $module_dir
-make -C "$tmp_path" M="$PWD" modules
-rm -rf "$tmp_path"
-pop
+[[ -n "$seen" ]] || fatal "Could not find headers for '$device' at version '$version', run $0 --list"
