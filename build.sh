@@ -55,7 +55,7 @@ function get_header_paths()
 
 	local pattern="^images/(${dev_pat})/(${ver_pat})/kernel_modules_headers"
 
-	curl --silent $files_url | while rdom; do
+	while rdom; do
 		local path="$val"
 
 		if [[ "$key" = 'Key' ]] && [[ "$val" =~ $pattern ]]; then
@@ -68,7 +68,7 @@ function get_header_paths()
 				echo $path
 			fi
 		fi
-	done
+	done <<<$(curl --silent $files_url)
 }
 
 # List available devices and versions.
