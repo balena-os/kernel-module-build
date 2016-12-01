@@ -52,7 +52,7 @@ function get_header_paths()
 	local dev_pat="${3:-.*}"
 	local ver_pat="${4:-.*}"
 
-	local pattern="^images/(${dev_pat})/(${ver_pat})/kernel_modules_headers"
+	local pattern="^images/($dev_pat)/($ver_pat)/kernel_modules_headers"
 
 	local last_marker=''
 
@@ -100,7 +100,7 @@ device="$1"
 version="$2"
 module_dir="$3"
 
-[[ -d "${module_dir}" ]] || fatal "ERROR: Cannot find module directory ${module_dir}"
+[[ -d "$module_dir" ]] || fatal "ERROR: Cannot find module directory $module_dir"
 
 path=$(get_header_paths '' '' "$device" "$version")
 [[ -n "$path" ]] || fatal "Could not find headers for '$device' at version '$version', run $0 --list"
