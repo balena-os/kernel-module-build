@@ -41,14 +41,16 @@ function rdom()
 }
 
 # Retrieves all available kernel header archives.
-# args: $1 - if non-empty use list mode
-#       $2 - device search pattern (default .*)
-#       $3 - version search pattern (default .*)
+# args: $1 - marker
+#       $2 - if non-empty use list mode
+#       $3 - device search pattern (default .*)
+#       $4 - version search pattern (default .*)
 function get_header_paths()
 {
-	local list_mode="${1:-}"
-	local dev_pat="${2:-.*}"
-	local ver_pat="${3:-.*}"
+	local marker="$1"
+	local list_mode="$2"
+	local dev_pat="${3:-.*}"
+	local ver_pat="${4:-.*}"
 
 	local pattern="^images/(${dev_pat})/(${ver_pat})/kernel_modules_headers"
 
@@ -65,13 +67,13 @@ function get_header_paths()
 				echo $path
 			fi
 		fi
-	done <<<$(curl --silent $files_url)
+	done <<<$(curl --silent "$files_url?marker=$marker")
 }
 
 # List available devices and versions.
 function list_versions()
 {
-	get_header_paths 'y' | while read device version path; do
+	get_header_paths '' 'y' | while read device version path; do
 		printf "%-30s %-30s\n" $device $version
 	done
 }
@@ -89,7 +91,7 @@ module_dir="$3"
 
 [[ -d "${module_dir}" ]] || fatal "ERROR: Cannot find module directory ${module_dir}"
 
-path=$(get_header_paths '' "$device" "$version")
+path=$(get_header_paths '' '' "$device" "$version")
 [[ -n "$path" ]] || fatal "Could not find headers for '$device' at version '$version', run $0 --list"
 
 filename=$(basename $path)
