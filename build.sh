@@ -54,10 +54,16 @@ function get_header_paths()
 
 	local pattern="^images/(${dev_pat})/(${ver_pat})/kernel_modules_headers"
 
+	local last_marker=''
+
 	while rdom; do
 		local path="$val"
 
-		if [[ "$key" = 'Key' ]] && [[ "$val" =~ $pattern ]]; then
+		if [[ "$key" = 'Key' ]]; then
+			last_marker=$val
+
+			[[ "$val" =~ $pattern ]] || continue
+
 			local device="${BASH_REMATCH[1]}"
 			local version="${BASH_REMATCH[2]}"
 
