@@ -62,7 +62,7 @@ function get_header_paths()
 		if [[ "$key" = 'Key' ]]; then
 			last_marker=$val
 
-			[[ "$val" =~ $pattern ]] || continue
+			[[ "$val" =~ $(echo "$pattern" | sed -e 's/+/\\+/g') ]] || continue
 
 			local device="${BASH_REMATCH[1]}"
 			local version="${BASH_REMATCH[2]}"
@@ -108,7 +108,7 @@ function get_and_build()
 	tmp_path=$(mktemp --directory)
 	push $tmp_path
 
-	if ! wget "$url"; then
+	if ! wget $(echo "$url" | sed -e 's/+/%2B/g'); then
 		pop
 		rm -rf "$tmp_path"
 
