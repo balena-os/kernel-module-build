@@ -73,7 +73,7 @@ function get_header_paths()
 				echo $path
 			fi
 		fi
-	done <<<$(curl --silent "$files_url?marker=$marker")
+	done <<<$(curl -L --silent "$files_url?marker=$marker")
 
 	# If we have seen all of the available data then the last marker we've
 	# seen will be empty, otherwise we need to recurse to retrieve the rest
