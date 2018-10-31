@@ -1,6 +1,6 @@
 #!/bin/bash
 
-files_url='https://files.resin.io' # URL exporting S3 XML
+files_url='https://files.balena-cloud.com' # URL exporting S3 XML
 
 # Output arguments to stderr.
 function err()
