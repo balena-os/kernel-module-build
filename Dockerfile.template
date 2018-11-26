@@ -1,6 +1,6 @@
 FROM resin/%%RESIN_MACHINE_NAME%%-debian
 
-RUN apt-get update && apt-get install -y curl wget build-essential
+RUN apt-get update && apt-get install -y curl wget build-essential libelf-dev
 COPY . /usr/src/app
 WORKDIR /usr/src/app
 RUN ./build.sh %%RESIN_MACHINE_NAME%% '2.24.0+rev3.dev' example_module
