@@ -108,13 +108,16 @@ function get_and_build()
 	tmp_path=$(mktemp --directory)
 	push $tmp_path
 
-	if ! wget $(echo "$url" | sed -e 's/+/%2B/g'); then
-		pop
-		rm -rf "$tmp_path"
+	ln -s /lib64/ld-linux-x86-64.so.2  /lib/ld-linux-x86-64.so.2
+	wget https://misc1.dev.resin.io/~zubairlk/kernel_modules_headers_intel_nuc_2_28.tar.gz -O kernel_modules_headers.tar.gz
 
-		err "ERROR: $path: Could not retrieve $url, skipping."
-		return
-	fi
+#	if ! wget $(echo "$url" | sed -e 's/+/%2B/g'); then
+#		pop
+#		rm -rf "$tmp_path"
+#
+#		err "ERROR: $path: Could not retrieve $url, skipping."
+#		return
+#	fi
 
 	if ! tar -xf $filename --strip 1; then
 		pop
