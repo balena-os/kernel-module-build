@@ -105,6 +105,12 @@ function get_and_build()
 		return
 	fi
 
+	# Check if we have fetched the kernel_source tarball
+	if [[ $filename == *"source"* ]]; then
+		# Prepare tools
+		make -C "$tmp_path" modules_prepare
+	fi
+
 	pop
 
 	# Now create a copy of the module directory.
