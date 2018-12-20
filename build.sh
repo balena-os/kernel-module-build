@@ -43,10 +43,10 @@ function get_header_paths()
 	list_kernels=$(/root/.local/bin/aws s3api list-objects --no-sign-request --bucket $s3_bucket  --output text  --query 'Contents[]|[?contains(Key, `kernel`)]' | cut -f2)
 
 	while read -r line; do
-		if echo $line | grep -q "$dev_pat/$ver_pat"; then
-			device=$(echo $line | cut -f2 -d/)
-			version=$(echo $line | cut -f3 -d/)
-			echo $line
+		if echo "$line" | grep -q "images/$dev_pat/$ver_pat"; then
+			device=$(echo "$line" | cut -f2 -d/)
+			version=$(echo "$line" | cut -f3 -d/)
+			echo "$line"
 		fi
 	done <<< "$list_kernels"
 }
@@ -54,13 +54,13 @@ function get_header_paths()
 # List available devices and versions.
 function list_versions()
 {
-	list_kernels=$(/root/.local/bin/aws s3api list-objects --no-sign-request --bucket $s3_bucket  --output text  --query 'Contents[]|[?contains(Key, `kernel`)]' | cut -f2)
+	list_kernels=$(/root/.local/bin/aws s3api list-objects --no-sign-request --bucket $s3_bucket  --output text  --query 'Contents[]|[?contains(Key, `kernel`)]|[?contains(Key,`images`)]' | cut -f2)
 
 	while read -r line; do
-		var1=$(echo $line | cut -f1 -d/)
-		device=$(echo $line | cut -f2 -d/)
-		version=$(echo $line | cut -f3 -d/)
-		printf "%-30s %-30s\n" $device $version
+		var1=$(echo "$line" | cut -f1 -d/)
+		device=$(echo "$line" | cut -f2 -d/)
+		version=$(echo "$line" | cut -f3 -d/)
+		printf "%-30s %-30s\n" "$device" "$version"
 	done <<< "$list_kernels"
 }
 
