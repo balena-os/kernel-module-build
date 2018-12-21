@@ -108,6 +108,13 @@ function get_and_build()
 	tmp_path=$(mktemp --directory)
 	push $tmp_path
 
+	# Workaround for the nuc image. Tools compiled expecting /lib/ld-linux-x86-64.so.2 while it is in /lib64
+	if [ -f /lib64/ld-linux-x86-64.so.2 ]; then
+		if [ ! -f /lib/ld-linux-x86-64.so.2 ]; then
+			ln -s /lib64/ld-linux-x86-64.so.2  /lib/ld-linux-x86-64.so.2
+		fi
+	fi
+
 	if ! wget $(echo "$url" | sed -e 's/+/%2B/g'); then
 		pop
 		rm -rf "$tmp_path"
