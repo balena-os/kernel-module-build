@@ -3,6 +3,6 @@ FROM resin/%%RESIN_MACHINE_NAME%%-debian
 RUN apt-get update && apt-get install -y curl wget build-essential libelf-dev python3-pip && pip3 install awscli --upgrade --user
 COPY . /usr/src/app
 WORKDIR /usr/src/app
-RUN ./build.sh %%RESIN_MACHINE_NAME%% 'v2.26.0+rev1.prod' example_module
+RUN ./build.sh %%RESIN_MACHINE_NAME%% '2.26.0+rev1.prod' example_module
 
 CMD ./run.sh
