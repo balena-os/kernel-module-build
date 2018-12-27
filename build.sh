@@ -1,7 +1,14 @@
 #!/bin/bash
 
 files_url='https://files.balena-cloud.com' # URL exporting S3 XML
-s3_bucket=$(curl -s $files_url 2>&1 | sed 's|.*https://\(.*\).s3.amazonaws.co.*|\1|')
+s3_xml=$(curl -L -s $files_url)
+
+# From https://stackoverflow.com/a/7052168
+read_dom () {
+    local IFS=\>
+    read -d \< ENTITY CONTENT
+}
+s3_bucket=$(while read_dom; do if [[ $ENTITY = "Name" ]] ; then  echo $CONTENT; fi; done <<<"$s3_xml")
 
 # Output arguments to stderr.
 function err()
