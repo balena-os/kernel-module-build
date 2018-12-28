@@ -1,6 +1,14 @@
 #!/bin/bash
 
 files_url='https://files.balena-cloud.com' # URL exporting S3 XML
+s3_xml=$(curl -L -s $files_url)
+
+# From https://stackoverflow.com/a/7052168
+read_dom () {
+    local IFS=\>
+    read -d \< ENTITY CONTENT
+}
+s3_bucket=$(while read_dom; do if [[ $ENTITY = "Name" ]] ; then  echo $CONTENT; fi; done <<<"$s3_xml")
 
 # Output arguments to stderr.
 function err()
@@ -32,61 +40,35 @@ function pop()
 	popd >/dev/null
 }
 
-# Super-basic XML parsing.
-# See http://stackoverflow.com/a/2608159
-function rdom()
-{
-	local IFS=\>
-	read -d \< key val
-}
-
 # Retrieves all available kernel header archives.
-# args: $1 - marker
-#       $2 - if non-empty use list mode
-#       $3 - device search pattern (default .*)
-#       $4 - version search pattern (default .*)
+# args: $1 - device search pattern (default .*)
+#       $2 - version search pattern (default .*)
 function get_header_paths()
 {
-	local marker="$1"
-	local list_mode="$2"
-	local dev_pat="${3:-.*}"
-	local ver_pat="${4:-.*}"
+	local dev_pat="${1:-.*}"
+	local ver_pat="${2:-.*}"
+	list_kernels=$(/root/.local/bin/aws s3api list-objects --no-sign-request --bucket $s3_bucket  --output text  --query 'Contents[]|[?contains(Key, `kernel`)]' | cut -f2)
 
-	local pattern="^images/($dev_pat)/($ver_pat)/kernel_modules_headers"
-
-	local last_marker=''
-
-	while rdom; do
-		local path="$val"
-
-		if [[ "$key" = 'Key' ]]; then
-			last_marker=$val
-
-			[[ "$val" =~ $(echo "$pattern" | sed -e 's/+/\\+/g') ]] || continue
-
-			local device="${BASH_REMATCH[1]}"
-			local version="${BASH_REMATCH[2]}"
-
-			if [[ -n "$list_mode" ]]; then
-				echo $device $version
-			else
-				echo $path
-			fi
+	while read -r line; do
+		if echo "$line" | grep -q "images/$dev_pat/$ver_pat"; then
+			device=$(echo "$line" | cut -f2 -d/)
+			version=$(echo "$line" | cut -f3 -d/)
+			echo "$line"
 		fi
-	done <<<$(curl -L --silent "$files_url?marker=$marker")
-
-	# If we have seen all of the available data then the last marker we've
-	# seen will be empty, otherwise we need to recurse to retrieve the rest
-	# of the data.
-	[[ -z "$last_marker" ]] || get_header_paths "$last_marker" "$list_mode" "$dev_pat" "$ver_pat"
+	done <<< "$list_kernels"
 }
 
 # List available devices and versions.
 function list_versions()
 {
-	get_header_paths '' 'y' | while read device version path; do
-		printf "%-30s %-30s\n" $device $version
-	done
+	list_kernels=$(/root/.local/bin/aws s3api list-objects --no-sign-request --bucket $s3_bucket  --output text  --query 'Contents[]|[?contains(Key, `kernel`)]|[?contains(Key,`images`)]' | cut -f2)
+
+	while read -r line; do
+		var1=$(echo "$line" | cut -f1 -d/)
+		device=$(echo "$line" | cut -f2 -d/)
+		version=$(echo "$line" | cut -f3 -d/)
+		printf "%-30s %-30s\n" "$device" "$version"
+	done <<< "$list_kernels"
 }
 
 # Retrieve kernel module headers from the specified remote path and build kernel
@@ -131,6 +113,12 @@ function get_and_build()
 		return
 	fi
 
+	# Check if we have fetched the kernel_source tarball
+	if [[ $filename == *"source"* ]]; then
+		# Prepare tools
+		make -C "$tmp_path" modules_prepare
+	fi
+
 	pop
 
 	# Now create a copy of the module directory.
@@ -146,6 +134,7 @@ function get_and_build()
 }
 
 if [[ "$1" = "--list" ]]; then
+	echo "Fetching list from servers"
 	list_versions
 	exit
 elif [[ $# -lt 3 ]]; then
@@ -159,7 +148,9 @@ module_dir="$3"
 [[ -d "$module_dir" ]] || fatal "ERROR: Cannot find module directory $module_dir"
 
 seen=''
-for path in $(get_header_paths '' '' "$device" "$version"); do
+
+echo "Fetching list from servers"
+for path in $(get_header_paths "$device" "$version"); do
 	echo "Building $path..."
 
 	get_and_build $path
