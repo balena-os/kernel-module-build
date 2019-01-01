@@ -47,7 +47,7 @@ function get_header_paths()
 {
 	local dev_pat="${1:-.*}"
 	local ver_pat="${2:-.*}"
-	list_kernels=$(/root/.local/bin/aws s3api list-objects --no-sign-request --bucket $s3_bucket  --output text  --query 'Contents[]|[?contains(Key, `kernel`)]' | cut -f2)
+	list_kernels=$(aws s3api list-objects --no-sign-request --bucket $s3_bucket  --output text  --query 'Contents[]|[?contains(Key, `kernel`)]' | cut -f2)
 
 	while read -r line; do
 		if echo "$line" | grep -q "images/$dev_pat/$ver_pat"; then
