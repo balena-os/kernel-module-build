@@ -1,4 +1,4 @@
-FROM resin/%%RESIN_MACHINE_NAME%%-debian
+FROM balenalib/%%RESIN_MACHINE_NAME%%-debian
 
 RUN apt-get update && apt-get install -y curl wget build-essential libelf-dev python3-pip && pip3 install awscli --upgrade --user
 COPY . /usr/src/app
