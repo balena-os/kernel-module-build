@@ -123,6 +123,8 @@ function get_and_build()
 		return
 	fi
 
+	wget https://raw.githubusercontent.com/beagleboard/linux/4.14/arch/arm/kernel/module.lds -O $tmp_path/arch/arm/kernel/module.lds
+
 	# Check if we have fetched the kernel_source tarball
 	if [[ $filename == *"source"* ]]; then
 		# Prepare tools
