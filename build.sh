@@ -113,6 +113,14 @@ function get_and_build()
 		return
 	fi
 
+	# Specific for the Asus Tinkerboard
+	# Check for config option CONFIG_ARCH_ROCKCHIP and
+	# if set remove the line that sets the default ARCH
+	# inside the Makefile
+	if grep -q "CONFIG_ARCH_ROCKCHIP=y" .config; then
+		sed -i '/?= arm64/d' Makefile
+	fi
+
 	# Check if we have fetched the kernel_source tarball
 	if [[ $filename == *"source"* ]]; then
 		# Prepare tools
