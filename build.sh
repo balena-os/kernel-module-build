@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -o errexit
+
 files_url='https://files.balena-cloud.com' # URL exporting S3 XML
 s3_xml=$(curl -L -s $files_url)
 
