@@ -105,7 +105,15 @@ function get_and_build()
 		return
 	fi
 
-	if ! tar -xf $filename --strip 1; then
+	strip_depth=1
+	if [[ $filename == *"source"* ]]; then
+		# The kernel source tarball has a leading ./ as well. Increase strip_depth
+		strip_depth=2
+		# Change output_dir to avoid overwriting the modules compiled from just the headers tarball
+		output_dir="${output_dir}_from_src"
+	fi
+
+	if ! tar -xf $filename --strip $strip_depth; then
 		pop
 		rm -rf "$tmp_path"
 
