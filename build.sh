@@ -113,6 +113,12 @@ function get_and_build()
 		return
 	fi
 
+	# Workaround for the ts4900 to deal with unknown relocation error
+	# when build OOT modules
+	if grep -q "ts4900" ./arch/arm/boot/dts/Makefile; then
+		sed -i 's/^CFLAGS_MODULE \+=/CFLAGS_MODULE += -fno-pic/g' Makefile
+        fi
+
 	# Check if we have fetched the kernel_source tarball
 	if [[ $filename == *"source"* ]]; then
 		# Prepare tools
