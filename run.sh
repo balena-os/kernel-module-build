@@ -1,12 +1,15 @@
 #!/bin/bash
 
 OS_VERSION=$(echo $RESIN_HOST_OS_VERSION | cut -d " " -f 2)
-mod_dir="example_module_${RESIN_DEVICE_TYPE}_${OS_VERSION}*"
+echo "OS Version is $OS_VERSION"
 
-insmod $mod_dir/hello.ko
-lsmod | grep hello
-rmmod hello
-echo done!
+mod_dir="example_module_${RESIN_DEVICE_TYPE}_${OS_VERSION}*"
+for each in $mod_dir; do
+	echo Loading module from $each
+	insmod $each/hello.ko
+	lsmod | grep hello
+	rmmod hello
+done
 
 while true; do
 	sleep 60
