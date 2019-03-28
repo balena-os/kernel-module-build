@@ -92,13 +92,6 @@ function get_and_build()
 	tmp_path=$(mktemp --directory)
 	push $tmp_path
 
-	# Workaround for the nuc image. Tools compiled expecting /lib/ld-linux-x86-64.so.2 while it is in /lib64
-	if [ -f /lib64/ld-linux-x86-64.so.2 ]; then
-		if [ ! -f /lib/ld-linux-x86-64.so.2 ]; then
-			ln -s /lib64/ld-linux-x86-64.so.2  /lib/ld-linux-x86-64.so.2
-		fi
-	fi
-
 	if ! wget $(echo "$url" | sed -e 's/+/%2B/g'); then
 		pop
 		rm -rf "$tmp_path"
@@ -122,6 +115,11 @@ function get_and_build()
 		err "ERROR: $path: Unable to extract $tmp_path/$filename, skipping."
 		return
 	fi
+
+	# Kernel headers for some devices need a few workarounds to build. These workarounds either effect
+	# the build environment. Or the headers were incorrectly generated during the os build stage.
+	# The full kernel source tarball available from v2.30+ should always work.
+	/usr/src/app/workarounds.sh $device $version $output_dir
 
 	# Check if we have fetched the kernel_source tarball
 	if [[ $filename == *"source"* ]]; then
