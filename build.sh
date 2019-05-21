@@ -105,7 +105,7 @@ function get_and_build()
 		# The kernel source tarball has a leading ./ as well. Increase strip_depth
 		strip_depth=2
 		# Change output_dir to avoid overwriting the modules compiled from just the headers tarball
-		output_dir="${output_dir}_from_src"
+		output_dir="${output_dir}_from_kernel-devsrc"
 	fi
 
 	if ! tar -xf $filename --strip $strip_depth; then
@@ -121,12 +121,6 @@ function get_and_build()
 	# The full kernel source tarball available from v2.30+ should always work.
 	/usr/src/app/workarounds.sh $device $version $output_dir
 
-	# Check if we have fetched the kernel_source tarball
-	if [[ $filename == *"source"* ]]; then
-		# Prepare tools
-		make -C "$tmp_path" modules_prepare
-	fi
-
 	pop
 
 	# Now create a copy of the module directory.
@@ -135,7 +129,13 @@ function get_and_build()
 	cp -R "$module_dir"/* "$output_dir"
 
 	push "$output_dir"
-	make -C "$tmp_path" M="$PWD" modules
+	if [[ $filename == *"source"* ]]; then
+		# for kernel-devsrc headers also run modules_prepare so necessary helper headers are generated
+		make -C "$tmp_path"/source modules_prepare
+		make -C "$tmp_path"/source M="$PWD" modules
+	else
+		make -C "$tmp_path" M="$PWD" modules
+	fi
 	pop
 
 	rm -rf "$tmp_path"
