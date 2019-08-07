@@ -22,6 +22,12 @@ if [[ "$device" == beagle* ]] ; then
 	wget https://raw.githubusercontent.com/beagleboard/linux/4.14/arch/arm/kernel/module.lds -O "$PWD"/arch/arm/kernel/module.lds
 fi
 
+if [[ "$device" == odroid-xu4 ]] ; then
+	echo Workaround odroid
+	# Fetch from 4.19.1 linux-stable
+	wget https://raw.githubusercontent.com/gregkh/linux/cc4c818b2219c58af5f0ca59f3e9f02c48bc0b65/arch/arm/kernel/module.lds -O "$PWD"/arch/arm/kernel/module.lds
+fi
+
 if [[ "$device" == intel-nuc ]] ; then
 	echo Workaround nuc
 	# Workaround for the nuc image. Tools compiled expecting /lib/ld-linux-x86-64.so.2 while it is in /lib64
