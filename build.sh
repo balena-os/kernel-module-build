@@ -102,8 +102,14 @@ function get_and_build()
 
 	strip_depth=1
 	if [[ $filename == *"source"* ]]; then
-		# The kernel source tarball has a leading ./ as well. Increase strip_depth
-		strip_depth=2
+		# The kernel source tarball generated using kernel-devsrc pre-thud and post-thud have different folder layouts.
+		# Detect the layout and select strip_depth accordingly
+		test_strip=$(tar tzf $filename | head -2 | tail -1 | sed  's/[^0-9]*//g')
+		if [ -z "$test_strip" ]; then
+			strip_depth=2
+		else
+			strip_depth=3
+		fi
 		# Change output_dir to avoid overwriting the modules compiled from just the headers tarball
 		output_dir="${output_dir}_from_src"
 	fi
