@@ -26,10 +26,21 @@ function fatal()
 }
 
 # Output usage and halt.
-function usage()
-{
-	err   "usage: $0 <device type> <version> <module path>"
-	fatal "   or: $0 --list - list available devices and versions"
+function usage() {
+    cat <<EOUSAGE
+usage: $0 [build|list] [options]
+
+commands:
+  list: list available devices and versions.
+  build: build kernel module for specified device and OS versions.
+
+build options:
+  --device="$device"    Balena machine name.
+  --os-version="$os-version"   Space separated list of OS versions.
+  --src="$src"     Where to find kernel module source.
+  --dest-dir="$dest-dir"     Destination directory, defaults to "output".
+
+EOUSAGE
 }
 
 function push()
@@ -56,6 +67,8 @@ function get_header_paths()
 			device=$(echo "$line" | cut -f2 -d/)
 			version=$(echo "$line" | cut -f3 -d/)
 			echo "$line"
+		else
+			err "Could not find headers for '$device' at version '$version', run $0 list"
 		fi
 	done <<< "$list_kernels"
 }
@@ -84,7 +97,7 @@ function get_and_build()
 
 	local device="${BASH_REMATCH[2]}"
 	local version="${BASH_REMATCH[3]}"
-	local output_dir="${module_dir}_${device}_${version}"
+	local output_dir="${output_dir}/${module_dir}_${device}_${version}"
 
 	filename=$(basename $path)
 	url="$files_url/$path"
@@ -97,6 +110,8 @@ function get_and_build()
 		rm -rf "$tmp_path"
 
 		err "ERROR: $path: Could not retrieve $url, skipping."
+		didFail=1
+		failedVersions+=" $version"
 		return
 	fi
 
@@ -119,6 +134,8 @@ function get_and_build()
 		rm -rf "$tmp_path"
 
 		err "ERROR: $path: Unable to extract $tmp_path/$filename, skipping."
+		didFail=1
+		failedVersions+=" $version"
 		return
 	fi
 
@@ -137,7 +154,7 @@ function get_and_build()
 
 	# Now create a copy of the module directory.
 	rm -rf "$output_dir"
-	mkdir "$output_dir"
+	mkdir -p "$output_dir"
 	cp -R "$module_dir"/* "$output_dir"
 
 	push "$output_dir"
@@ -147,28 +164,77 @@ function get_and_build()
 	rm -rf "$tmp_path"
 }
 
-if [[ "$1" = "--list" ]]; then
-	echo "Fetching list from servers"
-	list_versions
-	exit
-elif [[ $# -lt 3 ]]; then
-	usage
-fi
+# Args handling
+opts="$(getopt -o 'h?' --long 'list,device:,os-version:,src:,dest-dir:' -- "$@" || { usage >&2 && exit 1; })"
+eval set -- "$opts"
 
-device="$1"
-version="$2"
-module_dir="$3"
+device=
+versions=
+module_dir=
+output_dir="output"
 
-[[ -d "$module_dir" ]] || fatal "ERROR: Cannot find module directory $module_dir"
-
-seen=''
-
-echo "Fetching list from servers"
-for path in $(get_header_paths "$device" "$version"); do
-	echo "Building $path..."
-
-	get_and_build $path
-	seen='y'
+while true; do
+    flag=$1
+    shift
+    case "$flag" in
+        --device) device="$1" && shift ;;
+		--os-version) versions="$1" && shift ;;
+		--dest-dir) output_dir="$1" && shift ;;
+        --src) module_dir="$1" && shift ;;
+        --) break ;;
+        *)
+            {
+                echo "error: unknown flag: $flag"
+                usage
+            } >&2
+            exit 1
+            ;;
+    esac
 done
 
-[[ -n "$seen" ]] || fatal "Could not find headers for '$device' at version '$version', run $0 --list"
+# which command
+command="$1"
+case "$command" in
+	build)
+		shift
+		;;
+	list)
+		echo "Fetching list from servers" && list_versions && exit
+		;;
+	*)
+		{
+			echo "error: unknown command: $1"
+			usage
+		} >&2
+		exit 1
+		;;
+esac
+
+[[ -d "$module_dir" ]] || fatal "ERROR: Cannot find module directory $module_dir"
+[[ -z "$versions" ]] && fatal "ERROR: No version specified"
+
+if [[ -z "$device" ]]; then
+	if [[ -z "$BALENA_MACHINE_NAME" ]]; then
+		fatal "ERROR: No device specified"
+	else
+		err "No device specified, use default device type: $BALENA_MACHINE_NAME."
+		device="$BALENA_MACHINE_NAME"
+	fi
+fi
+
+didFail=
+failedVersions=""
+
+for version in $versions; do
+	for path in $(get_header_paths "$device" "$version"); do
+		echo $path
+		echo "Building $path..."
+
+		get_and_build $path
+	done
+done
+
+if [[ ! -z "$didFail" ]]; then
+	fatal "Could not find headers for '$device' at version '$failedVersions', run $0 list"
+fi
+
