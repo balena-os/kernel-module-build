@@ -62,15 +62,15 @@ function get_header_paths()
 	local ver_pat="${2:-.*}"
 	list_kernels=$(aws s3api list-objects --no-sign-request --bucket $s3_bucket  --output text  --query 'Contents[]|[?contains(Key, `kernel`)]' | cut -f2)
 
+	local found=
 	while read -r line; do
-		if echo "$line" | grep -e "^\(esr\-\)\?images\/" | grep -q "$dev_pat/$ver_pat"; then
-			device=$(echo "$line" | cut -f2 -d/)
-			version=$(echo "$line" | cut -f3 -d/)
+		if echo "$line" | grep -e "^\(esr\-\)\?images\/" | grep -q "$dev_pat/$ver_pat"
+		then
 			echo "$line"
-		else
-			err "Could not find headers for '$device' at version '$version', run $0 list"
+			found=1
 		fi
 	done <<< "$list_kernels"
+	[ -n "${found}" ] || fatal "Could not find headers for '$dev_pat' at version '$ver_pat', run $0 list"
 }
 
 # List available devices and versions.
@@ -227,7 +227,7 @@ failedVersions=""
 
 for version in $versions; do
 	for path in $(get_header_paths "$device" "$version"); do
-		echo $path
+
 		echo "Building $path..."
 
 		get_and_build $path
