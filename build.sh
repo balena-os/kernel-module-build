@@ -158,7 +158,8 @@ function get_and_build()
 	cp -R "$module_dir"/* "$output_dir"
 
 	push "$output_dir"
-	make -C "$tmp_path" M="$PWD" modules
+	make KLIB_BUILD="$tmp_path" KLIB=. defconfig-iwlwifi-public
+	make KLIB_BUILD="$tmp_path" KLIB=. modules -j4
 	pop
 
 	rm -rf "$tmp_path"
