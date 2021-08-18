@@ -13,6 +13,10 @@ if [ -f /lib64/ld-linux-x86-64.so.2 ]; then
 	fi
 fi
 
+if [[ "$device" == genericx86-64* || "$device" == "intel-nuc" ]] ; then
+		cp "/usr/src/app/firmware-loader/module.lds" "${PWD}/scripts/"
+fi
+
 if [[ "$device" == asus-tinker* ]] ; then
 	echo Workaround tinkerboard
 	# Specific for the Asus Tinkerboard
