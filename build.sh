@@ -10,7 +10,7 @@ read_dom () {
     local IFS=\>
     read -d \< ENTITY CONTENT
 }
-s3_bucket=$(while read_dom; do if [[ $ENTITY = "Name" ]] ; then  echo $CONTENT; fi; done <<<"$s3_xml")
+s3_bucket=$(while read_dom; do if [[ $ENTITY = "Name" ]] ; then  echo "$CONTENT"; fi; done <<<"$s3_xml")
 
 # Output arguments to stderr.
 function err()
@@ -45,7 +45,7 @@ EOUSAGE
 
 function push()
 {
-	pushd $1 >/dev/null
+	pushd "$1" >/dev/null
 }
 
 function pop()
@@ -60,7 +60,7 @@ function get_header_paths()
 {
 	local dev_pat="${1:-.*}"
 	local ver_pat="${2:-.*}"
-	list_kernels=$(aws s3api list-objects --no-sign-request --bucket $s3_bucket  --output text  --query 'Contents[]|[?contains(Key, `kernel`)]' | cut -f2)
+	list_kernels=$(aws s3api list-objects --no-sign-request --bucket "$s3_bucket"  --output text  --query 'Contents[]|[?contains(Key, `kernel`)]' | cut -f2)
 
 	local found=
 	while read -r line; do
@@ -76,10 +76,9 @@ function get_header_paths()
 # List available devices and versions.
 function list_versions()
 {
-	list_kernels=$(aws s3api list-objects --no-sign-request --bucket $s3_bucket  --output text  --query 'Contents[]|[?contains(Key, `kernel`)]|[?contains(Key,`images`)]' | cut -f2)
+	list_kernels=$(aws s3api list-objects --no-sign-request --bucket "$s3_bucket"  --output text  --query 'Contents[]|[?contains(Key, `kernel`)]|[?contains(Key,`images`)]' | cut -f2)
 
 	while read -r line; do
-		var1=$(echo "$line" | cut -f1 -d/)
 		device=$(echo "$line" | cut -f2 -d/)
 		version=$(echo "$line" | cut -f3 -d/)
 		printf "%-30s %-30s\n" "$device" "$version"
@@ -91,66 +90,70 @@ function list_versions()
 # ..._<device>_<version> suffix.
 function get_and_build()
 {
-	local path="$1"
+	local device=$1
+	local version=$2
 	local pattern="^(esr-)?images/(.*)/(.*)/"
-	[[ "$path" =~ $pattern ]] || fatal "Invalid path '$path'?!"
-
-	local device="${BASH_REMATCH[2]}"
-	local version="${BASH_REMATCH[3]}"
 	local output_dir="${output_dir}/${module_dir}_${device}_${version}"
-
-	filename=$(basename $path)
-	url="$files_url/$path"
-
+	local tmp_path
 	tmp_path=$(mktemp --directory)
-	push $tmp_path
 
-	if ! wget $(echo "$url" | sed -e 's/+/%2B/g'); then
-		pop
-		rm -rf "$tmp_path"
+	# Download the kernel_source & kernel_module_headers.
+	# The source should be downloaded first then extracted.
+	# After which the headers are to be downloaded then extracted to the
+	# same directory as the source.
+	for path in $(get_header_paths "$device" "$version" | sort -r); do
+		[[ "$path" =~ $pattern ]] || fatal "Invalid path '$path'?!"
 
-		err "ERROR: $path: Could not retrieve $url, skipping."
-		didFail=1
-		failedVersions+=" $version"
-		return
-	fi
+		filename=$(basename "$path")
+		url="$files_url/$path"
 
-	strip_depth=1
-	if [[ $filename == *"source"* ]]; then
-		# The kernel source tarball generated using kernel-devsrc pre-thud and post-thud have different folder layouts.
-		# Detect the layout and select strip_depth accordingly
-		test_strip=$(tar tzf $filename | head -2 | tail -1 | sed  's/[^0-9]*//g')
-		if [ -z "$test_strip" ]; then
-			strip_depth=2
-		else
-			strip_depth=3
+		push "$tmp_path"
+
+		if ! wget -q $(echo "$url" | sed -e 's/+/%2B/g'); then
+			pop
+			rm -rf "$tmp_path"
+
+			err "ERROR: $path: Could not retrieve $url, skipping."
+			didFail=1
+			failedVersions+=" $version"
+			return
 		fi
-		# Change output_dir to avoid overwriting the modules compiled from just the headers tarball
-		output_dir="${output_dir}_from_src"
-	fi
 
-	if ! tar -xf $filename --strip $strip_depth; then
+		strip_depth=1
+		if [[ $filename == *"source"* ]]; then
+			# The kernel source tarball generated using kernel-devsrc pre-thud and post-thud have different folder layouts.
+			# Detect the layout and select strip_depth accordingly
+			test_strip=$(tar tzf "$filename" | head -2 | tail -1 | sed  's/[^0-9]*//g')
+			if [ -z "$test_strip" ]; then
+				strip_depth=2
+			else
+				strip_depth=3
+			fi
+		fi
+
+		if ! tar -xf "$filename" --strip $strip_depth; then
+			pop
+			rm -rf "$tmp_path"
+
+			err "ERROR: $path: Unable to extract $tmp_path/$filename, skipping."
+			didFail=1
+			failedVersions+=" $version"
+			return
+		fi
+
+		# Kernel headers for some devices need a few workarounds to build. These workarounds either effect
+		# the build environment. Or the headers were incorrectly generated during the os build stage.
+		# The full kernel source tarball available from v2.30+ should always work.
+		/usr/src/app/workarounds.sh "$device" "$version" "$output_dir"
+
+		# Check if we have fetched the kernel_source tarball
+		if [[ $filename == *"source"* ]]; then
+			# Prepare tools
+			make -C "$tmp_path" modules_prepare
+		fi
+
 		pop
-		rm -rf "$tmp_path"
-
-		err "ERROR: $path: Unable to extract $tmp_path/$filename, skipping."
-		didFail=1
-		failedVersions+=" $version"
-		return
-	fi
-
-	# Kernel headers for some devices need a few workarounds to build. These workarounds either effect
-	# the build environment. Or the headers were incorrectly generated during the os build stage.
-	# The full kernel source tarball available from v2.30+ should always work.
-	/usr/src/app/workarounds.sh $device $version $output_dir
-
-	# Check if we have fetched the kernel_source tarball
-	if [[ $filename == *"source"* ]]; then
-		# Prepare tools
-		make -C "$tmp_path" modules_prepare
-	fi
-
-	pop
+	done
 
 	# Now create a copy of the module directory.
 	rm -rf "$output_dir"
@@ -158,7 +161,11 @@ function get_and_build()
 	cp -R "$module_dir"/* "$output_dir"
 
 	push "$output_dir"
-	make -C "$tmp_path" M="$PWD" modules
+	if [ -f "$tmp_path"/include/config/kernel.release ]
+	then
+		KERNEL_VERSION=$(cat "$tmp_path"/include/config/kernel.release)
+	fi
+	make KVER="$KERNEL_VERSION" KSRC="$tmp_path" M="$PWD" modules
 	pop
 
 	rm -rf "$tmp_path"
@@ -226,15 +233,10 @@ didFail=
 failedVersions=""
 
 for version in $versions; do
-	for path in $(get_header_paths "$device" "$version"); do
-
-		echo "Building $path..."
-
-		get_and_build $path
-	done
+	get_and_build "$device" "$version"
 done
 
-if [[ ! -z "$didFail" ]]; then
+if [[ -n "$didFail" ]]; then
 	fatal "Could not find headers for '$device' at version '$failedVersions', run $0 list"
 fi
 
