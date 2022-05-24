@@ -1,4 +1,4 @@
-FROM balenalib/%%BALENA_MACHINE_NAME%%-debian-python:3-bullseye
+FROM balenalib/%%BALENA_MACHINE_NAME%%-ubuntu-python:3.8.13-impish
 
 RUN install_packages \
     curl \
