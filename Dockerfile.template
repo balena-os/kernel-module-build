@@ -1,23 +1,59 @@
-FROM balenalib/%%BALENA_MACHINE_NAME%%-ubuntu-python:3.8.13-impish
+FROM ubuntu:jammy-20220531 as kernel-build
 
-RUN install_packages \
-    curl \
-    wget \
-    build-essential \
-    libelf-dev \
+ARG DEBIAN_FRONTEND=noninteractive
+ENV TZ=Etc/UTC
+
+RUN apt-get update && \
+    apt-get install -y \
     awscli \
     bc \
+    bison \
+    build-essential \
+    curl \
     flex \
+    git \
+    libelf-dev \
     libssl-dev \
-    bison
-
-
-COPY . /usr/src/app
+    wget
 
 WORKDIR /usr/src/app
 
-ENV VERSION '2.88.4.prod'
+# Clones the kernel builder repository
+RUN git clone https://github.com/balena-os/kernel-module-build.git .
 
-RUN BALENA_MACHINE_NAME=%%BALENA_MACHINE_NAME%% ./build.sh build --device %%BALENA_MACHINE_NAME%% --os-version "$VERSION" --src example_module
+# You can switch to a specific commit of the kernel builder if you want to ensure consistent builds
+# git reset --hard f889851c5d00890b51b27c63eaa59a976063265a
 
-CMD [ "/usr/src/app/run.sh" ]
+# Copy your kernel source from your local build context to the build directory
+COPY example_module .
+
+# Set the name of the directory where you have copied your kernel source in the step above
+ENV MOD_DIR "example_module"
+
+# Set the balena OS version you intend to use
+ENV OS_VERSION '2.99.27'
+
+# Start the build
+RUN BALENA_MACHINE_NAME=%%BALENA_MACHINE_NAME%% ./build.sh build --device %%BALENA_MACHINE_NAME%% --os-version "$OS_VERSION" --src "$MOD_DIR"
+
+
+FROM alpine
+
+# Set the directory where you would like your kernel source
+ARG MOD_PATH=/etc/output
+ENV MOD_DIR example_module
+
+# Required for access when the container starts
+ENV MOD_PATH="$MOD_PATH"
+
+# Copy the built kernel module into your app
+COPY --from=kernel-build /usr/src/app/output/ "$MOD_PATH"
+
+# Copy the startup script for loading the modules
+COPY --from=kernel-build /usr/src/app/run.sh /usr/src/app/run.sh
+
+# Start the script that loads the modules.
+ENTRYPOINT ["sh", "/usr/src/app/run.sh"]
+
+# Run your usual service with CMD
+CMD exec /bin/sh -c "trap : TERM INT; sleep 9999999999d & wait"
