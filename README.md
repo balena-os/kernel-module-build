@@ -1,9 +1,13 @@
-This is an example of building an out-of-tree kernel module using module headers
-provided for balena devices.
+# Kernel Module Build
 
-Make sure you change to the desired balenaOS version in the [Dockerfile.template][Dockerfile template] and commit the change before you start building this project.
+This is an example of building an out-of-tree kernel module using module headers provided for balena devices.
 
-#### Usage
+### Usage
+
+`Dockerfile` demonstrates how to use a multistage build in the balena Cloud to build your kernel and copy it in to your application container. Make sure you change to the desired balenaOS version by amending the environment variables in the Dockerfile.
+
+#### Build options
+
 ```
 usage: build.sh [build|list] [options]
 
@@ -21,5 +25,3 @@ examples:
   ./build.sh list
   ./build.sh build --device intel-nuc --os-version '2.48.0+rev3.prod 2.47.1+rev1.prod' --src example_module
 ```
-
-[Dockerfile template]: https://github.com/balena-io-playground/kernel-module-build/blob/master/Dockerfile.template#L6
