@@ -4,5 +4,6 @@
 *.symvers
 *.order
 .*
+!.github
 !.gitignore
 *.mod.c
