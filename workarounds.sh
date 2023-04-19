@@ -37,3 +37,10 @@ if [[ "$device" == ts4900 ]] ; then
 		sed -i 's/^CFLAGS_MODULE \+=/CFLAGS_MODULE += -fno-pic/g' Makefile
         fi
 fi
+
+if [[ "$device" == up-board ]] ; then
+	echo Workaround up-board
+	# Workaround for the up-board to re-compile the module generating tools with flags
+	# specific to the builder server CPU arch
+	make modules_prepare
+fi
