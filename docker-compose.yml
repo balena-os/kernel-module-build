@@ -1,0 +1,18 @@
+version: '2'
+
+services:
+  load:
+    build:
+      context: ./module
+      dockerfile: Dockerfile.template
+      args:
+        # Modify to the desired balenaOS version
+        OS_VERSION: 2.108.27
+    privileged: true
+    restart: on-failure
+  check:
+    build:
+      context: ./check
+      dockerfile: Dockerfile.template
+    depends_on:
+      - load
