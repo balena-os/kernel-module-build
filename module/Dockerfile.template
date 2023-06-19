@@ -1,0 +1,46 @@
+FROM ubuntu:jammy-20220531 as kernel-build
+
+ARG DEBIAN_FRONTEND=noninteractive
+ENV TZ=Etc/UTC
+
+RUN apt-get update && \
+    apt-get install -y \
+    bison \
+    build-essential \
+    flex \
+    libelf-dev \
+    libssl-dev \
+    wget
+
+WORKDIR /usr/src/app
+
+ARG SRC_DIR=src
+ARG OUT_DIR=out
+ARG OS_VERSION
+
+COPY src $SRC_DIR/
+COPY include include/
+COPY build.sh .
+COPY load.sh .
+COPY workarounds.sh .
+RUN ./build.sh -s %%BALENA_MACHINE_NAME%% -v $OS_VERSION -i $SRC_DIR -o $OUT_DIR
+
+FROM alpine
+
+ARG SRC_DIR=src
+ARG OUT_DIR=out
+ARG OS_VERSION
+
+# Set the location for kernel modules
+ARG MOD_PATH=/opt/lib/modules/$OS_VERSION
+# Required for access when the container starts
+ENV MOD_PATH="$MOD_PATH"
+
+# Copy the built kernel module into your app
+COPY --from=kernel-build /usr/src/app/"$OUT_DIR"/"$SRC_DIR"_%%BALENA_MACHINE_NAME%%_"$OS_VERSION" "$MOD_PATH"
+
+# Copy the startup script for loading the modules
+COPY --from=kernel-build /usr/src/app/load.sh /usr/src/app/load.sh
+
+# Start the script that loads the modules.
+ENTRYPOINT ["sh", "/usr/src/app/load.sh"]
