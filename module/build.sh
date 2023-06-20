@@ -54,11 +54,14 @@ fetch_headers()
 build_module() {
 	local headers_dir="${1}"
 	local output_dir="${2}"
+	local nvidia_installer="NVIDIA-Linux-${DRIVER_ARCH}-${DRIVER_VERSION}.run"
 
-	mkdir -p "${output_dir}"
-	cd "${output_dir}"
 	make -C "${headers_dir}" modules_prepare
-	make -C "${headers_dir}" M="$PWD" modules
+	wget --quiet https://us.download.nvidia.com/XFree86/Linux-${DRIVER_ARCH}/${DRIVER_VERSION}/${nvidia_installer}
+	chmod a+x "${nvidia_installer}"
+	./${nvidia_installer} --silent --kernel-source-path "${headers_dir}"
+	mkdir -p "${output_dir}"
+	cp /lib/modules/*/video/* ${output_dir}
 	rm -rf "$headers_dir"
 }
 
@@ -97,7 +100,6 @@ main() {
 
 		rm -rf "$output_dir"
 		mkdir -p "$output_dir"
-		cp -dR "$src_dir"/* "$output_dir"
 
 		build_module $(fetch_headers "${slug}" "${os_version}") "${output_dir}"
 	fi

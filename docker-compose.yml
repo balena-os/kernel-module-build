@@ -8,6 +8,9 @@ services:
       args:
         # Modify to the desired balenaOS version
         OS_VERSION: 2.108.27
+        # Modify to the desired Nvidia GPU driver version and architecture
+        DRIVER_VERSION: 535.54.03
+        DRIVER_ARCH: x86_64
     privileged: true
     restart: on-failure
   check:

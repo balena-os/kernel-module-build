@@ -9,6 +9,10 @@ for file in "$MOD_PATH"/*.ko; do
 	if lsmod | grep -q hello; then
 		rmmod hello
 	fi
+	# remove the nouveau module if it's loaded
+	if lsmod | grep -q nouveau; then
+		rmmod nouveau
+	fi
 	echo Loading module from "$file"
 	insmod "$file"
 done

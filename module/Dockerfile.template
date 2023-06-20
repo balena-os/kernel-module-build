@@ -10,6 +10,7 @@ RUN apt-get update && \
     flex \
     libelf-dev \
     libssl-dev \
+    kmod \
     wget
 
 WORKDIR /usr/src/app
@@ -18,7 +19,12 @@ ARG SRC_DIR=src
 ARG OUT_DIR=out
 ARG OS_VERSION
 
-COPY src $SRC_DIR/
+ARG DRIVER_VERSION
+ARG DRIVER_ARCH
+ENV DRIVER_VERSION="$DRIVER_VERSION"
+ENV DRIVER_ARCH="$DRIVER_ARCH"
+ENV DRIVER_NAME=NVIDIA-Linux-$DRIVER_ARCH-$DRIVER_VERSION.run
+
 COPY include include/
 COPY build.sh .
 COPY load.sh .
