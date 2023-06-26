@@ -1,0 +1,5 @@
+FROM alpine
+
+COPY entry.sh /usr/bin/entry.sh
+
+ENTRYPOINT ["sh", "/usr/bin/entry.sh"]
