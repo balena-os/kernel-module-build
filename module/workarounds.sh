@@ -14,7 +14,6 @@ if [ -f /lib64/ld-linux-x86-64.so.2 ]; then
 fi
 
 if [[ "$device" == asus-tinker* ]] ; then
-	echo Workaround tinkerboard
 	# Specific for the Asus Tinkerboard
 	# Check for config option CONFIG_ARCH_ROCKCHIP and
 	# if set remove the line that sets the default ARCH
@@ -25,12 +24,10 @@ if [[ "$device" == asus-tinker* ]] ; then
 fi
 
 if [[ "$device" == beagle* ]] ; then
-	echo Workaround bbb
 	wget https://raw.githubusercontent.com/beagleboard/linux/4.14/arch/arm/kernel/module.lds -O "$PWD"/arch/arm/kernel/module.lds
 fi
 
 if [[ "$device" == ts4900 ]] ; then
-	echo Workaround ts4900
 	# Workaround for the ts4900 to deal with unknown relocation error
 	# when build OOT modules
 	if grep -q "ts4900" ./arch/arm/boot/dts/Makefile; then
