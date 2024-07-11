@@ -11,7 +11,8 @@ RUN apt-get update && \
     libelf-dev \
     libssl-dev \
     kmod \
-    wget
+    wget \
+    bc
 
 WORKDIR /usr/src/app
 

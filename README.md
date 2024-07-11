@@ -1,7 +1,7 @@
-# Kernel Module Builder
+# Nvidia Kernel Module Builder
 
-Provides an example of a multi-container application with a service that builds
-an out-of-tree kernel module, loads it and runs it alongside an example service.
+Provides a multi-container application with a service that builds
+an out-of-tree Nvidia kernel module, loads it and runs it alongside an example service.
 
 * The `load` service builds the kernel module source located in `module/src`
   using module headers provided for balena devices using a multi-stage build
@@ -21,12 +21,10 @@ balena push <fleet>
 
 The device type will be automatically retrieved from the specified fleet.
 
-## Customization
+## Note
+Once pushed, the Nvidia drivers will be loaded.
+To confirm they are properly working you can SSH to the any device and run:
+`lsmod | grep nvidia`
 
-* Replace the `OS_VERSION` argument in the `load` service in the
-  `docker-compose.yml` file to match the balenaOS version of the target device.
-
-* Replace the contents of the `module/src` directory with the module source to
-  build.
-
-* Replace the `check` service by your own service.
+To push this container again you will first need to unload any previous module:
+`rmmod nvidia_drm nvidia_uvm nvidia_modeset nvidia_peermem nvidia`

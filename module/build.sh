@@ -59,7 +59,13 @@ build_module() {
 	make -C "${headers_dir}" modules_prepare
 	wget --quiet https://us.download.nvidia.com/XFree86/Linux-${DRIVER_ARCH}/${DRIVER_VERSION}/${nvidia_installer}
 	chmod a+x "${nvidia_installer}"
-	./${nvidia_installer} --silent --kernel-source-path "${headers_dir}"
+
+	skip_module_load_option=""
+	if ./${nvidia_installer} --advanced-options | grep -ic -- "--skip-module-load"; then
+		skip_module_load_option="--skip-module-load"
+	fi
+	./${nvidia_installer} --silent --kernel-source-path "${headers_dir}" ${skip_module_load_option}
+
 	mkdir -p "${output_dir}"
 	cp /lib/modules/*/video/* ${output_dir}
 	rm -rf "$headers_dir"
