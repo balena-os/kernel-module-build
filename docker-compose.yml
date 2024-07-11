@@ -7,9 +7,9 @@ services:
       dockerfile: Dockerfile.template
       args:
         # Modify to the desired balenaOS version
-        OS_VERSION: 2.108.27
+        OS_VERSION: 5.3.27+rev1
         # Modify to the desired Nvidia GPU driver version and architecture
-        DRIVER_VERSION: 535.54.03
+        DRIVER_VERSION: "550.100"
         DRIVER_ARCH: x86_64
     privileged: true
     restart: on-failure
