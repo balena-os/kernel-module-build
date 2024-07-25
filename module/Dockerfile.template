@@ -1,4 +1,4 @@
-FROM ubuntu:jammy-20220531 as kernel-build
+FROM ubuntu:jammy-20240530 as kernel-build
 
 ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
