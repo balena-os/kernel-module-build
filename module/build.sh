@@ -33,14 +33,24 @@ fetch_headers()
 	fi
 
 	url="${files_url}/${image_path}/${slug}/${version//+/%2B}/kernel_modules_headers.tar.gz"
+	filename=$(basename "$url")
 	tmp_path=$(mktemp --directory)
-	cd $tmp_path
 
-	if ! wget --quiet $(echo "$url" | sed -e 's/+/%2B/g'); then
+	# See if the header files are already provided
+	if [ -f "/usr/src/app/${filename}" ]; then
+		cp "/usr/src/app/${filename}" "${tmp_path}"
+	else
+
+		if ! wget --quiet -P "$tmp_path" $(echo "$url" | sed -e 's/+/%2B/g'); then
+			fail "Could not find headers for '$slug' at version '$version'"
+		fi
+	fi
+
+	if [ ! -f "$tmp_path/$filename" ]; then
 		fail "Could not find headers for '$slug' at version '$version'"
 	fi
 
-	filename=$(basename $url)
+	cd "$tmp_path"
 	# Count paths to strip by looking for .config and counting forward slashes
 	strip_depth=$(tar tf ${filename} | grep "/\.config$" | tr -dc / | wc -c)
 	if ! tar -xf $filename --strip $strip_depth; then

@@ -30,3 +30,7 @@ The device type will be automatically retrieved from the specified fleet.
   build.
 
 * Replace the `check` service by your own service.
+
+* Optionally, kernel header files can be provided under
+  `module/kernel-module-headers.tar.gz`. This is only required for
+  private device types that do not have the header files publicly available.
