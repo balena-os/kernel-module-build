@@ -23,7 +23,7 @@ COPY src $SRC_DIR/
 COPY include include/
 COPY build.sh .
 COPY load.sh .
-COPY workarounds.sh .
+COPY workarounds.sh kernel_modules_headers.tar.gz* ./
 RUN ./build.sh -s %%BALENA_MACHINE_NAME%% -v $OS_VERSION -i $SRC_DIR -o $OUT_DIR
 
 FROM alpine
