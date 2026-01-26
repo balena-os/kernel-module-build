@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile.template
       args:
         # Modify to the desired balenaOS version
-        OS_VERSION: 2.108.27
+        OS_VERSION: 6.10.9
     privileged: true
     restart: on-failure
   check:
