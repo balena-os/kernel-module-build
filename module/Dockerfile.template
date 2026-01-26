@@ -1,17 +1,17 @@
-FROM ubuntu:jammy-20220531 as kernel-build
+FROM alpine:20251224 as kernel-build
 
 ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
 
-RUN apt-get update && \
-    apt-get install -y \
+RUN apk add --no-cache \
     bison \
-    build-essential \
+    build-base \
     flex \
-    libelf-dev \
-    libssl-dev \
+    elfutils-dev \
+    openssl-dev \
     bc \
-    wget
+    wget \
+    bash
 
 WORKDIR /usr/src/app
 
