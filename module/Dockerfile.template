@@ -11,7 +11,8 @@ RUN apk add --no-cache \
     openssl-dev \
     bc \
     wget \
-    bash
+    bash \
+    linux-headers
 
 WORKDIR /usr/src/app
 
