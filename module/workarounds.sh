@@ -26,7 +26,7 @@ fi
 
 if [[ "$device" == beagle* ]] ; then
 	echo Workaround bbb
-	wget https://raw.githubusercontent.com/beagleboard/linux/4.14/arch/arm/kernel/module.lds -O "$PWD"/arch/arm/kernel/module.lds
+	wget https://raw.githubusercontent.com/beagleboard/linux/4.14/arch/arm/kernel/module.lds -O "$dest_folder"/arch/arm/kernel/module.lds
 fi
 
 if [[ "$device" == ts4900 ]] ; then
