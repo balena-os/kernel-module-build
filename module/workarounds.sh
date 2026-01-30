@@ -24,11 +24,6 @@ if [[ "$device" == asus-tinker* ]] ; then
 	fi
 fi
 
-if [[ "$device" == beagle* ]] ; then
-	echo Workaround bbb
-	wget https://raw.githubusercontent.com/beagleboard/linux/4.14/arch/arm/kernel/module.lds -O "$PWD"/arch/arm/kernel/module.lds
-fi
-
 if [[ "$device" == ts4900 ]] ; then
 	echo Workaround ts4900
 	# Workaround for the ts4900 to deal with unknown relocation error
