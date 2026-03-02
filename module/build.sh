@@ -57,7 +57,7 @@ fetch_headers()
 		rm -rf "$tmp_path"
 		fail "Unable to extract $tmp_path/$filename."
 	fi
-	/usr/src/app/workarounds.sh "${slug}" "${version}" "${tmp_path}"
+	/usr/src/app/module/workarounds.sh "${slug}" "${version}" "${tmp_path}"
 	echo "${tmp_path}"
 }
 
